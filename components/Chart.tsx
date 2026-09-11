@@ -198,6 +198,7 @@ export default function Chart({ pontos, altas, moeda, parcialDesde }: Props) {
   );
 
   const ticksY = useMemo(() => marcasY(y0, y1, log, alturaPlot), [y0, y1, log, alturaPlot]);
+  const maxTick = ticksY.length ? Math.max(...ticksY) : y1;
   const ticksX = useMemo(() => marcasX(pontos, iA, iB, larguraPlot), [pontos, iA, iB, larguraPlot]);
 
   const caminho = useCallback(
@@ -278,7 +279,7 @@ export default function Chart({ pontos, altas, moeda, parcialDesde }: Props) {
             <g key={`gy-${t}`}>
               <line x1={MARGEM.esquerda} x2={MARGEM.esquerda + larguraPlot} y1={y(t)} y2={y(t)} className="grade" />
               <text x={MARGEM.esquerda - 10} y={y(t)} dy="0.32em" textAnchor="end" className="rotulo-eixo">
-                {eixoY(t, moeda)}
+                {eixoY(t, moeda, maxTick)}
               </text>
             </g>
           ))}
@@ -382,7 +383,7 @@ export default function Chart({ pontos, altas, moeda, parcialDesde }: Props) {
 
 /** Marcas "redondas" no eixo de valores. */
 function marcasY(y0: number, y1: number, log: boolean, altura: number): number[] {
-  const alvo = Math.max(3, Math.min(7, Math.round(altura / 70)));
+  const alvo = Math.max(4, Math.min(7, Math.round(altura / 70)));
   if (log) {
     const out: number[] = [];
     for (let e = Math.floor(Math.log10(y0)); e <= Math.ceil(Math.log10(y1)); e++) {
@@ -393,10 +394,16 @@ function marcasY(y0: number, y1: number, log: boolean, altura: number): number[]
     }
     return out.length >= 2 ? out : [y0, y1];
   }
-  const bruto = (y1 - y0) / alvo;
-  const mag = Math.pow(10, Math.floor(Math.log10(bruto)));
-  const norm = bruto / mag;
-  const passo = (norm >= 5 ? 5 : norm >= 2 ? 2 : norm >= 1 ? 1 : 0.5) * mag;
+  // Menor passo "redondo" que ainda produz no máximo `alvo` linhas. Escolher
+  // pela contagem, e não por uma fórmula sobre a magnitude, evita tanto o eixo
+  // com treze réguas quanto o eixo com três.
+  const amplitude = y1 - y0;
+  const mag = Math.pow(10, Math.floor(Math.log10(amplitude / alvo)));
+  let passo = mag;
+  for (const mult of [1, 2, 5, 10, 20, 50]) {
+    passo = mult * mag;
+    if (amplitude / passo <= alvo) break;
+  }
   const out: number[] = [];
   for (let v = Math.ceil(y0 / passo) * passo; v <= y1; v += passo) out.push(Number(v.toFixed(6)));
   return out;

@@ -73,11 +73,15 @@ export function detectarAltas(pontos: Ponto[]): Alta[] {
 }
 
 /**
- * Escolhe a era que melhor cobre o intervalo da alta. O critério é a fração da
- * era coberta pela alta, então uma era estreita e específica ganha de uma era
- * ampla que apenas contém o período por acidente.
+ * Escolhe a era que melhor descreve o intervalo da alta.
+ *
+ * A nota é o produto de duas coberturas: quanto da ALTA a era cobre e quanto da
+ * ERA a alta cobre. Só uma das duas não basta — usando apenas a segunda, uma era
+ * curta e regional venceria um ciclo longo que ela mal toca (era assim que uma
+ * alta de sete anos em dólar acabava rotulada com uma crise brasileira de 2002).
  */
 function eraDe(mes0: string, mes1: string): Era {
+  const larguraAlta = mesesEntre(mes0, somaMeses(mes1, 1));
   let melhor: Era = ERA_DESCONHECIDA;
   let melhorScore = 0;
   for (const era of ERAS) {
@@ -86,7 +90,7 @@ function eraDe(mes0: string, mes1: string): Era {
     const sobrepos = mesesEntre(ini, somaMeses(fim, 1));
     if (sobrepos <= 0) continue;
     const larguraEra = mesesEntre(era.de, somaMeses(era.ate, 1));
-    const score = sobrepos / larguraEra;
+    const score = (sobrepos / larguraAlta) * (sobrepos / larguraEra);
     if (score > melhorScore) { melhorScore = score; melhor = era; }
   }
   return melhor;

@@ -49,10 +49,17 @@ export function moeda(valor: number, m: Moeda, casas = 0): string {
 }
 
 /** Eixo Y: compacta 4.411 -> "4,4 mil" quando ajuda. */
-export function eixoY(valor: number, m: Moeda): string {
+/**
+ * Rótulo do eixo de valores. `maxEixo` é o maior tick do eixo: a unidade é
+ * escolhida uma vez para o eixo inteiro, para nunca misturar "US$ 500" com
+ * "US$ 1,5 mil" na mesma régua.
+ */
+export function eixoY(valor: number, m: Moeda, maxEixo: number): string {
   const s = SIMBOLO[m];
-  if (valor >= 10000) return `${s} ${(valor / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mil`;
-  if (valor >= 1000) return `${s} ${(valor / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+  if (maxEixo >= 10000) {
+    if (valor === 0) return `${s} 0`;
+    return `${s} ${(valor / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mil`;
+  }
   return `${s} ${valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 }
 
